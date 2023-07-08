@@ -1,0 +1,464 @@
+---
+title: "Jawaban UAS IS240 Probabilitas dan Statistika"
+author: "Andrew Brillyant"
+date: "2021-06"
+output: html_document
+---
+
+******************************************************   
+Nama     : Andrew Brillyant          
+Kelas    : B       
+NIM      : 00000044550    
+Tanggal  : 2021-06      
+Waktu    : Take Home     
+******************************************************   
+
+```{r}
+#MEMANGGIL LIBRARY
+library(readxl)
+library(ggplot2)
+library(moments) 
+library(dplyr)
+library(stringr)
+library(raster)
+library(nortest)
+library(tidyr)
+library(ggpubr)
+```
+
+```{r}
+#MEMBACA DATA
+Data <- read_excel("IS240B_00000044550_AndrewBrillyant.xlsx", sheet = "Form Responses 1")
+Data
+
+#DESKRIPSI SINGKAT DATA
+str(Data)
+head(Data)
+tail(Data)
+```
+
+
+```{r}
+
+#============= MERAPIKAN DATA KATEGORIKAL =============
+
+Data$Kepahaman<-as.factor(Data$Kepahaman)
+
+Data$BeliSaham<-as.factor(Data$BeliSaham)
+levels(Data$BeliSaham)[1]<-"Tidak Beli"
+levels(Data$BeliSaham)[2]<-"Investor"
+levels(Data$BeliSaham)[3]<-"Trader"
+
+Data$Pendapatan<-as.factor(Data$Pendapatan)
+attributes(Data$Pendapatan)
+levels(Data$Pendapatan)[1] <- "< 4juta" 
+levels(Data$Pendapatan)[2] <- ">30juta"
+levels(Data$Pendapatan)[3] <- "15-30juta"
+levels(Data$Pendapatan)[4] <- "4-15juta"
+Data$Pendapatan<-factor(Data$Pendapatan, levels = c("< 4juta","4-15juta","15-30juta",">30juta"))
+
+
+totalPembeli <- Data$BeliSaham
+levels(totalPembeli)[3]<-levels(totalPembeli)[2]
+levels(totalPembeli)[1]<-"Tidak Beli"
+levels(totalPembeli)[2]<-"Membeli"
+
+PembeliSaham <- Data$BeliSaham
+PembeliSaham <- PembeliSaham[!grepl("Tidak Beli",PembeliSaham)]
+levels(PembeliSaham)[2]<-levels(PembeliSaham)[1]
+levels(PembeliSaham)[1]<-"Investor"
+levels(PembeliSaham)[2]<-"Trader"
+
+#TIDAK BERKAITAN LANGSUNG DENGAN HIPOTESA
+Data$Tertarik_Sektor <- as.factor(Data$Tertarik_Sektor)
+TertarikSektor <- Data$Tertarik_Sektor
+attributes(TertarikSektor)
+levels(TertarikSektor)[1] <- "Fin"
+levels(TertarikSektor)[2] <- "B.Kons"
+levels(TertarikSektor)[3] <- "Kimia"
+levels(TertarikSektor)[4] <- "Infr"
+levels(TertarikSektor)[5] <- "Tbg"
+levels(TertarikSektor)[6] <- "Tani"
+levels(TertarikSektor)[7] <- "Prop"
+levels(TertarikSektor)[8] <- "Telkm"
+levels(TertarikSektor)[9] <- "None"
+
+AlasanTidakBeli <- as.factor(Data$AlasanTidakBeli)
+levels(AlasanTidakBeli)[2] <- "Tidak punya ilmu"
+levels(AlasanTidakBeli)[3] <- "Tidak punya modal"
+levels(AlasanTidakBeli)[4] <- "Tidak tertarik"
+
+BeliSektor <- as.factor(Data$Beli_Sektor)
+levels(BeliSektor)[1] <- "Em"
+levels(BeliSektor)[2] <- "F&K"
+levels(BeliSektor)[3] <- "F"
+levels(BeliSektor)[4] <- "F++"
+levels(BeliSektor)[5] <- "Frx"
+levels(BeliSektor)[6] <- "K"
+levels(BeliSektor)[7] <- "Kim"
+levels(BeliSektor)[8] <- "Infr"
+levels(BeliSektor)[9] <- "Tbg"
+levels(BeliSektor)[10] <- "Prop"
+levels(BeliSektor)[11] <- "Rek"
+levels(BeliSektor)[12] <- "U.L"
+
+AlasanBeli <- as.factor(Data$AlasanBeli)
+levels(AlasanBeli)[2]<-"Keamanan Finansial"
+levels(AlasanBeli)[3]<- "Mengerti ilmu"
+
+#CEK STRUKTUR DATA YANG TELAH DIMODIFIKASI
+str(Data)
+
+
+#============= TABEL =============
+
+UsiaTable <- table(Data$Usia)
+UsiaTable
+
+CovidTertarikTable <- table(Data$Tertarik_COVID19)
+CovidTertarikTable
+
+PendapatanTable <- table(Data$Pendapatan)
+PendapatanTable
+
+PahamTable <- table(Data$Kepahaman)
+PahamTable
+
+DistribusiPembeliSahamTable <- table(PembeliSaham)
+DistribusiPembeliSahamTable
+
+CovidBeliTable <- table(Data$Mulai_COVID19)
+CovidBeliTable
+
+DistribusiBeliTable <- table(Data$BeliSaham)
+DistribusiBeliTable
+
+DistribusiTotalBeliTable <- table(totalPembeli)
+DistribusiTotalBeliTable
+
+#TIDAK BERKAITAN LANGSUNG DENGAN HIPOTESA
+TertarikSektorTable <- table(TertarikSektor)
+TertarikSektorTable
+
+BeliSektorTable <- table(BeliSektor)
+BeliSektorTable
+
+alasanTidakBeliTable <- table(AlasanTidakBeli)
+alasanTidakBeliTable
+
+alasanBeliTable <- table(AlasanBeli)
+alasanBeliTable
+
+UangDinginPanasTable <- table(Data$UangDinginPanas)
+UangDinginPanasTable
+
+
+#TABEL STATISTIKA DESKRIPTIF
+KomparasiUsiaTable<-table(totalPembeli, Data$Usia)
+KomparasiUsiaTable
+
+tabelPerbandinganPendapatan<-table(totalPembeli, Data$Pendapatan)
+tabelPerbandinganPendapatan
+
+tabelPerbandinganPengetahuan <- table(totalPembeli, Data$Kepahaman)
+tabelPerbandinganPengetahuan
+
+UntungTable <- table(Data$Untung)
+UntungTable
+
+
+#============= VISUALISASI DATA KATEGORIKAL =============
+
+plot(Data$Usia)
+barplot(UsiaTable, main = "Distribusi Berdasarkan Usia", col = c(0:9, "seagreen2", "orchid1", "tomato2", "royalblue1", "hotpink3"))
+#Frekuensi tertinggi dalam barplot ini adalah "18"
+#Kesimpulan: Jumlah responden yang berusia 18 tahun adalah yang paling banyak
+
+barplot(PendapatanTable, main = "Distribusi Berdasarkan Pendapatan per Bulan", col = c(5:8))
+#Frekuensi tertinggi dalam barplot ini adalah "< 4 juta", sedangkan frekuensi terendah adalah "15-30juta"
+#Kesimpulan: Jumlah responden yang memiliki pendapatan dibawah 4 juta adalah yang paling banyak, sedangkan jumlah responden yang memiliki pendapatan antara 15-30juta adalah yang paling sedikit
+
+barplot(CovidTertarikTable, main = "Distribusi Ketertarikan Membeli Saham karena COVID-19",  col = c(1,7))
+#Frekuensi tertinggi dalam barplot ini adalah "Ya", sedangkan frekuensi terendah adalah "Tidak"
+#Kesimpulan: Jumlah responden yang tertarik membeli saham setelah pandemi COVID-19 terjadi adalah yang paling banyak, sedangkan jumlah responden yang tidak tertarik membeli saham setelah pandemi COVID-19 terjadi adalah yang paling sedikit
+
+barplot(CovidBeliTable, main = "Distribusi Waktu Membeli Saham Berdasarkan COVID-19", col = c(3,4))
+#Frekuensi tertinggi dalam barplot ini adalah "Setelah", sedangkan frekuensi terendah adalah "Sebelum"
+#Kesimpulan: Jumlah responden yang membeli saham setelah pandemi COVID-19 terjadi adalah yang paling banyak, sedangkan jumlah responden yang membeli saham sebelum pandemi COVID-19 terjadi adalah yang paling sedikit
+
+barplot(PahamTable, main = "Distribusi Tingkat Kepahaman Akan Saham", col = c(1,2,3,4,5), legend.text = c("1 = Tidak Paham", "2 = Kurang Paham", "3 = Cukup Paham", "4 = Paham", "5 = Sangat Paham"))
+#Frekuensi tertinggi dalam barplot ini adalah 3, yaitu tingkat pemahaman "Cukup Paham", sedangkan frekuensi terendah adalah 5, yaitu tingkat pemahaman "Sangat Paham"
+#Kesimpulan: Tingkat pemahaman responden kami terhadap saham paling banyak adalah 3 "Cukup Paham", sedangkan hanya sedikit responden yang memiliki tingkat pemahaman 5 "Sangat Paham"
+
+barplot(DistribusiBeliTable, main = "Distribusi Pembeli Saham", col = c(5,6,8))
+#Frekuensi tertinggi dalam barplot ini adalah "Tidak Beli", sedangkan frekuensi terendah adalah "Trader"
+#Kesimpulan: Jumlah responden yang tidak membeli saham adalah yang paling banyak, sedangkan jumlah responden yang membeli saham sebagai trader adalah yang paling sedikit
+
+barplot(DistribusiTotalBeliTable, main = "Distribusi Pembeli Saham", col = c(7,8))
+#Frekuensi tertinggi dalam barplot ini adalah "Tidak Beli", sedangkan frekuensi terendah adalah "Membeli"
+#Kesimpulan: Jumlah responden yang sudah membeli saham adalah yang paling banyak, sedangkan jumlah responden yang belum membeli saham adalah yang paling sedikit
+
+barplot(DistribusiPembeliSahamTable, main = "Distribusi Pembeli Saham ", col = c(7,8))
+#Frekuensi tertinggi dalam barplot ini adalah "Investor", sedangkan frekuensi terendah adalah "Trader"
+#Kesimpulan: Jumlah responden yang membeli saham sebagai investor adalah yang paling banyak, sedangkan jumlah responden yang membeli saham sebagai trader adalah yang paling sedikit
+
+#TIDAK BERKAITAN LANGSUNG DENGAN HIPOTESA
+barplot(TertarikSektorTable, main = "Distribusi Frekuensi Ketertarikan Sektor Saham", col = c(1:8,"purple"))
+#Frekuensi tertinggi dalam barplot ini adalah "Finansial" dan "Tidak Tertarik" dengan masing-masing berjumlah 37, sedangkan frekuensi terendah adalah "Telekomunikasi"
+#Kesimpulan: Jumlah responden yang tertarik pada sektor finansial dan tidak tertarik pada sektor apapun adalah yang paling banyak, sedangkan jumlah responden yang tertarik pada sektor telekomunikasi adalah yang paling sedikit
+
+barplot(alasanTidakBeliTable, main = "Distribusi Alasan Tidak Membeli Saham", col = c(2:5))
+#Frekuensi tertinggi dalam barplot ini adalah "Tidak Punya Ilmu", sedangkan frekuensi terendah adalah "Tidak Tertarik"
+#Kesimpulan: Jumlah responden yang tidak membeli saham karena tidak punya ilmu adalah yang paling banyak, sedangkan jumlah responden yang tidak membeli saham karena tidak tertarik adalah yang paling sedikit
+
+barplot(BeliSektorTable, main = "Distribusi Sektor yang Dibeli", col = c(1:8,"purple", "orange 3", "yellow", "pink", "red 3"))
+#Frekuensi tertinggi dalam barplot ini adalah 3, yaitu "Finansial", sedangkan frekuensi terendah adalah "Asuransi"
+#Kesimpulan: Jumlah responden yang membeli saham di sektor finansial adalah yang paling banyak, sedangkan jumlah responden yang membeli saham di sektor asuransi adalah yang paling sedikit
+
+barplot(alasanBeliTable, main = "Distribusi alasan beli saham", col = c(6:7))
+#Frekuensi tertinggi dalam barplot ini adalah "2", yaitu "Keamanan Finansial", sedangkan frekuensi terendah adalah "4", yaitu "Sumber Pendapatan"
+#Kesimpulan: Jumlah responden yang membeli saham untuk mendapatkan keamanan finansial adalah yang paling banyak, sedangkan jumlah responden yang membeli saham sebagai sumber pendapatan adalah yang paling sedikit
+
+barplot(UangDinginPanasTable, main = "Distribusi Penggunaan Uang Dingin atau Panas", col = c(6,7))
+#Frekuensi tertinggi dalam barplot ini adalah "Uang Dingin", sedangkan frekuensi terendah adalah "Uang Panas"
+#Kesimpulan: Jumlah responden yang membeli saham menggunakan uang dingin adalah yang paling banyak, sedangkan jumlah responden yang membeli saham menggunakan uang panas adalah yang paling sedikit
+
+barplot(UntungTable, main = "Distribusi Untung atau Tidaknya Pembeli Saham", col = c(6,7))
+#Frekuensi tertinggi dalam barplot ini adalah "Saya belum untung", sedangkan frekuensi terendah adalah "Saya sudah untung"
+#Kesimpulan: Jumlah responden yang sudah mendapatkan keuntungan dari saham adalah yang paling banyak, sedangkan jumlah responden yang belum mendapatkan keuntungan dari saham adalah yang paling sedikit
+
+
+#============= VISUALISASI DATA NUMERIKAL =============
+
+hist(Data$Usia, main = "Histogram Persebaran Usia", xlab = "Usia")
+#Frekuensi tertinggi dalam histogram ini adalah 15-20
+#Kesimpulan: Jumlah responden dengan rentang usia 15-20 tahun adalah yang paling banyak
+
+#VISUALISASI DATA NUMERIKAL YANG TIDAK BERKAITAN LANGSUNG DENGAN HIPOTESA
+Data$PersentaseImbal <- as.numeric(Data$PersentaseImbal)
+boxplot(Data$PersentaseImbal, ylab ="Persentase (%)", main = "Boxplot Persebaran Persentase Keuntungan Pembelian Saham")
+#Terdapat 1 outlier pada Data$PersentaseImbal
+
+#VISUALISASI STATISTIKA DESKRIPTIF
+boxplot(Data$Usia ~ totalPembeli)
+#Kesimpulan: Pada boxplot Tidak Beli, terdapat 4 outlier, sedangkan pada boxplot Membeli terdapat 3 outlier. Median boxplot Membeli lebih tinggi daripada median boxplot Tidak Beli
+
+#DENSITY PLOT
+plot(density(Data$Usia), main = "Density Plot Usia Responden")
+#Berdasarkan density plot tersebut, dapat disimpulkan bahwa distribusinya tidak mengikuti distribusi gaussian
+plot(density(Data$PersentaseImbal, na.rm=T), main = "Density Plot Presentase Imbalan yang Diharapkan Responden")
+#Berdasarkan density plot tersebut, dapat disimpulkan bahwa distribusinya tidak mengikuti distribusi gaussian
+
+#QQ-PLOT
+qqnorm(Data$Usia, main = "Q-Q Plot Usia Responden")
+#Berdasarkan QQ-plot tersebut, dapat disimpulkan bahwa distribusinya tidak mengikuti distribusi gaussian
+qqnorm(Data$PersentaseImbal, main = "Q-Q Plot Presentase Imbalan yang Diharapkan Responden")
+#Berdasarkan QQ-plot tersebut, dapat disimpulkan bahwa distribusinya tidak mengikuti distribusi gaussian
+
+#============= UJI NORMALITAS =============
+
+test1 <- stats::shapiro.test(Data$Usia)
+test1
+#p-value test Shapiro-Wilk Data$Usia < 2.2e-16 
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$Usia TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+test2 <- nortest::ad.test(Data$Usia)
+test2
+#p-value test Anderson-Darling Data$Usia < 2.2e-16
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$Usia TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+test3 <- nortest::sf.test(Data$Usia)
+test3
+#p-value test Shapiro-Francia Data$Usia < 2.2e-16
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$Usia TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+test4 <- stats::shapiro.test(Data$PersentaseImbal)
+test4
+#p-value test Shapiro-Wilk Data$PresentaseImbal = 2.951e-15
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$UPersentaseImbal TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+test5 <- nortest::ad.test(Data$PersentaseImbal)
+test5
+#p-value test Anderson-Darling Data$PresentaseImbal < 2.2e-16 
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$UPersentaseImbal TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+test6 <- nortest::sf.test(Data$PersentaseImbal)
+test6
+#p-value test Shapiro-Francia Data$PresentaseImbal < 3.35e-13
+#Hipotesa null normalitas DITOLAK pada alpha 5%.
+#Kesimpulan: Data$UPersentaseImbal TIDAK MENGIKUTI DISTRIBUSI GAUSSIAN/NORMAL 
+
+#============= BESARAN STATISTIK =============
+
+variabel_numerik = Data[,c(3,15)]
+str(variabel_numerik)
+
+summary(variabel_numerik)
+
+sd1 <- sd(Data$Usia, na.rm = T)
+koefisien_variasi1 <- sd1/20.95 #sd/mean
+koefisien_variasi1
+#varians Data$Usia adalah 0.2971999
+
+sd2 <- sd(Data$PersentaseImbal, na.rm = T)
+koefisien_variasi2 <- sd2/39.26 #sd/mean
+koefisien_variasi2
+#varians Data$PersentaseImbal adalah 1.57518
+
+#Dapat disimpulkan bahwa Data$PresentaseImbal lebih bervariasi (heterogen) dibandingkan Data$Usia
+
+skewness(Data$Usia, na.rm = T)
+#skewness Data$Usia bernilai positif, yaitu 3.857717
+#Kesimpulan: Ekor distribusi berada di kanan (positive skew), sehingga sebagian besar distribusi berada di nilai rendah
+
+skewness(Data$PersentaseImbal, na.rm = T)
+#skewness Data$PersentaseImbal bernilai positif, yaitu 6.417982
+#Kesimpulan: Ekor distribusi berada di kanan (positive skew), sehingga sebagian besar distribusi berada di nilai rendah
+
+kurtosis(Data$Usia, na.rm = T)
+#kurtosis Data$Usia > 3, yaitu 17.75905
+#Kesimpulan: Distribusi Data$Usia adalah leptokurtik (lepto kurtosis)
+
+kurtosis(Data$PersentaseImbal, na.rm = T)
+#kurtosis Data$PersentaseImbal > 3, yaitu 48.17834
+#Kesimpulan: Distribusi Data$PersentaseImbal adalah leptokurtik (lepto kurtosis)
+
+#Data$Usia memiliki positive skew dan leptokurtik, sehingga data tersebut tidak gaussian
+#Data$PresentaseImbal memiliki positive skew dan leptokurtik, sehingga data tersebut tidak gaussian
+
+```
+
+```{r}
+#Uji hipotesa pertama: Hubungan antara usia dengan minat seseorang dalam membeli saham.
+#H0 : Usia tidak berhubungan dengan minat membeli saham
+#H1 : Usia berhubungan dengan minat membeli saham.
+
+#PREDIKSI DENGAN GRAFIK
+barplot(KomparasiUsiaTable, main = "Perbandingan Usia dengan Minat Membeli Saham", beside = TRUE ,legend.text = c("1 = Tidak Beli", "2 = Membeli"), col = c(3,7))
+#Kesimpulan: Pada barplot, terlihat bahwa semakin tinggi usia maka semakin tinggi minat seseorang membeli saham. Sehingga diprediksikan bahwa usia berhubungan dengan minat membeli saham
+
+#TABEL FREKUENSI
+KomparasiUsiaTable
+
+chisq.test(KomparasiUsiaTable) #p-value = 0.1812 --> lebih besar dari alpha --> tidak tolak H0
+#Kesimpulan: Usia tidak berhubungan dengan minat membeli saham
+
+```
+
+```{r}
+#uji hipotesa kedua: Hubungan antara masa pandemi COVID-19 dengan minat membeli saham.
+#H0 : Minat membeli saham pada masa Pandemi COVID-19 tidak lebih besar daripada minat membeli saham sebelum masa Pandemi COVID-19
+#H1 : Minat membeli saham pada masa Pandemi COVID-19 lebih besar daripada minat membeli saham sebelum masa Pandemi COVID-19
+
+#PREDIKSI DENGAN GRAFIK
+barplot(CovidTertarikTable, main = "Distribusi Ketertarikan Membeli Saham karena COVID-19",  col = c(3,4))
+#Kesimpulan: Pada barplot, terlihat bahwa perbedaan frekuensi kedua bar tidak signifikan. Sehingga diprediksikan bahwa minat membeli saham pada masa Pandemi COVID-19 tidak lebih besar daripada minat membeli saham sebelum masa Pandemi COVID-19
+
+#TABEL FREKUENSI
+CovidTertarikTable
+prop.table(CovidTertarikTable)
+
+#UJI HIPOTESA
+x1 = 92
+n1 = 163
+p1 = 0.5
+prop.test(x1, n1, p1, correct = TRUE, alternative = "greater") 
+#p-value = 0.05861 --> lebih besar dari alpha, tidak tolak H0.
+
+#Kesimpulan : Minat membeli saham pada masa Pandemi COVID-19 tidak lebih besar daripada minat membeli saham sebelum masa Pandemi COVID-19
+
+```
+```{r}
+#uji hipotesa ketiga: Hubungan antara pengetahuan akan saham dengan minat seseorang membeli saham.
+#H0 : Pengetahuan akan saham tidak berhubungan dengan minat membeli saham
+#H1 : Pengetahuan akan saham berhubungan dengan minat membeli saham
+
+#PREDIKSI DENGAN GRAFIK
+barplot(tabelPerbandinganPengetahuan, main = "Perbandingan Distribusi Pengetahuan", beside = TRUE,legend.text = c("1 = Tidak Beli", "2 = Membeli"), col = c(3,4))
+#Kesimpulan: Pada barplot, terlihat bahwa perbedaan setiap distribusi cukup signifikan. Sehingga diprediksikan bahwa pengetahuan akan saham berhubungan dengan minat membeli saham
+
+#TABEL FREKUENSI
+tabelPerbandinganPengetahuan
+
+prop.table(tabelPerbandinganPengetahuan)
+
+chisq.test(tabelPerbandinganPengetahuan) #p-value = 2.789e-11  --> lebih kecil daripada alpha --> tolak H0
+
+#Kesimpulan : Terdapat hubungan antara pengetahuan akan saham dengan minat membeli saham.
+
+
+```
+```{r}
+#uji hipotesa keempat: Mayoritas masyarakat merupakan pembeli saham atau bukan
+#H0 : Mayoritas masyarakat tidak membeli saham
+#H1 : Mayoritas masyarakat membeli saham
+
+#PREDIKSI DENGAN GRAFIK
+barplot(DistribusiTotalBeliTable, main = "Distribusi Pembeli Saham", col = c(6,8))
+#Kesimpulan: Pada barplot, terlihat bahwa perbedaan antara orang yang membeli dan tidak membeli saham cukup signifikan. Sehingga diprediksikan bahwa mayoritas masyarakat tidak membeli saham
+
+#TABEL FREKUENSI
+DistribusiTotalBeliTable
+prop.table(DistribusiTotalBeliTable)
+
+#UJI HIPOTESA
+x2 = 69
+n2 = 233
+p2 = 0.5
+prop.test(x2, n2, p2, correct = TRUE, alternative = "greater") 
+#p-value = 1 --> lebih besar dari alpha, tidak tolak H0.
+
+#Kesimpulan : Mayoritas masyarakat tidak memebeli saham.
+
+```
+
+```{r}
+#uji hipotesa kelima: Hubungan antara pendapatan dengan pembelian saham.
+#H0 : Pendapatan orang yang membeli saham tidak lebih besar daripada pendapatan orang yang tidak membeli saham.
+#H1 : Pendapatan orang yang membeli saham lebih besar daripada pendapatan orang yang tidak membeli saham
+
+#PREDIKSI DENGAN GRAFIK
+barplot(tabelPerbandinganPendapatan, main = "Perbandingan Distribusi Pendapatan", beside = TRUE,legend.text = c("1 = Pendapatan Bukan Pembeli Saham", "2 = Pendapatan Pembeli Saham"), col = c(3,4))
+#Kesimpulan: Pada barplot, terlihat bahwa perbedaan antara setiap distribusi tidak terlalu signifikan. Sehingga diprediksikan bahwa pendapatan orang yang membeli saham tidak lebih besar daripada pendapatan orang yang tidak membeli saham.
+
+#TABEL FREKUENSI
+tabelPerbandinganPendapatan
+
+prop.table(tabelPerbandinganPendapatan)
+
+chisq.test(tabelPerbandinganPendapatan) #p-value = 0.152  --> lebih besar daripada alpha --> tidak menolak H0
+
+#Kesimpulan : Tidak terdapat hubungan antara pendapatan dengan minat membeli saham.
+
+```
+
+```{r}
+#uji hipotesa keenam: Mayoritas masyarakat membeli saham sebagai investor atau trader.
+#H0 : Investor saham tidak lebih banyak daripada trader saham.
+#H1 : Investor saham lebih banyak daripada trader saham.
+
+#PREDIKSI DENGAN GRAFIK
+barplot(DistribusiPembeliSahamTable, main = "Distribusi Pembeli Saham ", col = c(7,8))
+#Kesimpulan: Pada barplot, terlihat bahwa perbedaan antara invsetor dan trader saham cukup signifikan. Sehingga diprediksikan bahwa investor saham lebih banyak daripada trader saham.
+
+#TABEL FREKUENSI
+DistribusiPembeliSahamTable
+prop.table(DistribusiPembeliSahamTable)
+
+#UJI HIPOTESA
+x3 = 43
+n3 = 69
+p3 = 0.5
+prop.test(x3, n3, p3, correct = TRUE, alternative = "greater") 
+#p-value = p-value = 0.02704  --> lebih kecil dari alpha, tolak H0.
+
+#Kesimpulan : Investor saham lebih banyak daripada trader saham
+
+```
+
+
